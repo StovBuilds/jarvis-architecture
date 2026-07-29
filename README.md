@@ -127,7 +127,7 @@ TypeScript (Bun + Node.js) · Postgres 16 + pgvector · Claude (Haiku/Sonnet/Opu
 
 ## FAQ
 
-**Why Discord as a bus transport?** It's free, it's observable (every frame is a readable message in a channel — the audit trail is the transport), and it was already the human interface. The Postgres failover exists because depending on someone else's uptime for your own nervous system is a mistake.
+**Why Discord as a bus transport?** It's free, it's observable (every frame is a readable line in a private channel — the audit trail is the transport), and it was already the human interface. What crosses the bus is agent-to-agent coordination traffic, machine to machine — not conversation. The Postgres failover exists because depending on someone else's uptime for your own nervous system is a mistake.
 
 **Why one VPS?** Constraint breeds architecture. A 4-vCPU box forces cheap-model tiering, hard cost caps, and CPU/GPU workload splitting — the same disciplines that matter at real scale, learnable at personal scale.
 
