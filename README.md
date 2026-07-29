@@ -68,6 +68,29 @@ Key properties:
 - **Self-healing registry.** If the coordinator restarts and loses its in-memory registry, it broadcasts a probe and every agent re-registers within ~1 second. Liveness is classified three ways (ok/stale/dead) so callers fail fast instead of hanging.
 - **One shared memory.** Agents write "thoughts" into a Postgres+pgvector layer; a 15-minute consolidation job embeds, auto-links (cosine KNN, self-tuning thresholds), decays stale edges, and merges duplicates into a typed knowledge graph — rendered as an interactive 3D map (that renderer is the open-sourced [cortex-map](https://github.com/StovBuilds/cortex-map)).
 
+### How a frame travels
+
+What crosses the bus is agent-to-agent coordination traffic — machine to machine, one signed frame at a time. Roughly 34.5k of them a day.
+
+```mermaid
+flowchart LR
+    A["Agent A<br/><i>e.g. scout finds a gap</i>"]
+    S{{"HMAC-SHA256<br/>signed"}}
+
+    subgraph Bus["Dual-transport bus"]
+        T1["Discord channels<br/><b>primary</b> — replayable audit trail"]
+        T2["Postgres LISTEN/NOTIFY<br/><b>automatic failover</b>"]
+    end
+
+    C["Coordinator<br/>routes · liveness ok/stale/dead<br/>re-registers in ~1s"]
+    B["Agent B<br/><i>e.g. content drafts it</i>"]
+
+    A -->|"builds a frame"| S
+    S --> Bus
+    Bus -->|"signature verified"| C
+    C -->|"delivered"| B
+```
+
 ---
 
 ## The fleet
