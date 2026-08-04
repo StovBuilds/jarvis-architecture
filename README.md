@@ -140,6 +140,33 @@ These are the parts I'd actually want to read in someone else's architecture doc
 - **An OOM killed three work sessions.** The Discord bot's memory-capped cgroup took concurrent work sessions down with it. Fix, shipped same day: sessions became independent systemd user units with conversation-level resume pins, outside the bot's cgroup, surviving restarts and reboots.
 - **The voice agent was the fleet's biggest liar.** 88% of unsigned bus messages fleet-wide traced to one component building frames directly instead of using the signing wrapper. Fixed by forcing every outbound frame through one chokepoint.
 
+### Anatomy of the 153-signature bug
+
+The first story above, one level down. Signing shipped 2026-07-22 in **warn mode** — bad signatures counted and logged but still delivered, so a rollout bug could never become an outage. Frames are signed over a canonical string whose object keys are recursively sorted, precisely because the Postgres transport stores envelopes as `jsonb` and `jsonb` reorders keys.
+
+What warn mode caught within 48 hours: the canonicaliser walked the **live JS object**, but a verifier only ever sees what survives `JSON.stringify` → transport → `JSON.parse`. Two divergences. A `Date` in the payload has no enumerable keys — `Object.keys(new Date())` is `[]` — so the signer canonicalised it as `{}` while the wire carried the ISO string. And an `undefined` property canonicalised as `"key":null` while `JSON.stringify` (and `jsonb`) drop the key entirely. All 153 bad frames in the window — four services, every one a Postgres-sourced timestamp field — were the `Date` case.
+
+The fix (2026-07-23): make the canonicaliser mirror `JSON.stringify` value-for-value — apply `toJSON` before object handling, drop `undefined` keys. Output is unchanged for pure-JSON payloads, so services still on the old build kept interoperating with patched verifiers mid-rollout.
+
+```mermaid
+flowchart TB
+    P["One frame, payload carries<br/><i>captured_at: Date</i>"]
+    SGN["Signer canonicalises the<br/><b>live JS object</b><br/><i>a Date has no enumerable keys → signs it as empty</i>"]
+    W["The wire<br/><i>JSON.stringify → Discord / jsonb → JSON.parse<br/>Date becomes its ISO string</i>"]
+    VER["Verifier canonicalises<br/><b>what survived the wire</b>"]
+    X{{"different bytes<br/>HMAC mismatch"}}
+    WARN["warn mode: counted + logged,<br/>still delivered<br/><b>153/153 in 48h — one bug</b>"]
+    FIX["fix: canonicaliser mirrors<br/>JSON.stringify value-for-value<br/><i>toJSON first · undefined keys dropped</i>"]
+
+    P --> SGN
+    P --> W
+    W --> VER
+    SGN --> X
+    VER --> X
+    X --> WARN
+    WARN --> FIX
+```
+
 ---
 
 ## Stack
