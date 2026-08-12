@@ -132,11 +132,11 @@ Everyone demos a voice agent; almost nobody publishes latency distributions from
 flowchart TB
     A[Jack stops talking] --> B[Deepgram streaming STT<br/>utterance end ≈1s]
     B --> C{Semantic endpointer<br/>done, or mid-thought?}
-    C -- "mid-thought → hold<br/>median 764ms, ceiling 2.5s" --> D
+    C -- "mid-thought → hold<br/>median 764ms, cap 2.5s" --> D
     C -- done --> D[Model turn: LLM + tool calls<br/>p50 3.0s · p90 6.3s]
     D --> E[Streaming TTS<br/>first audio median 230ms]
     E --> F[Jarvis speaking]
-    F -. "barge-in: talking over him<br/>halts audio mid-sentence" .-> A
+    F -. "barge-in — talking over him<br/>halts the audio instantly" .-> A
 ```
 
 The endpointer is the honest part. It's a semantic classifier deciding "is he done talking, or mid-thought?", and it was originally biased to hold when unsure. Ground-truth logging (each verdict scored against whether I actually kept talking) showed that bias was tuned for a problem that no longer existed: **97.8% of its holds were needless** — I had finished — while the error it guarded against, cutting me off, sat at **0.4%** of complete verdicts. Every needless hold is pure added latency: a mean **745ms politeness tax on every turn**.
