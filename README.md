@@ -16,8 +16,8 @@ The system itself is private (it runs my life, so it stays single-user). This do
 |---|---|
 | Always-on agent services (systemd, `active running`) | **22** |
 | Inter-agent bus messages | **624k+ total, ~34.5k/day** |
-| Voice assistant tool integrations | **85** (grown from 51 in ~4 weeks) |
-| Voice latency, measured over 178 real conversational turns | **p50 3.3s · p90 7.0s** |
+| Voice assistant tool integrations | **92** (grown from 51 since late June; re-verified 2026-08-12) |
+| Voice latency, measured over 847 real conversational turns | **p50 3.0s · p90 6.3s** (window 2026-07-14 → 08-11; re-verified 2026-08-12 — see [Anatomy of a voice turn](#anatomy-of-a-voice-turn)) |
 | Knowledge graph | **3,183 nodes / 3,924 edges** (pgvector, 1024-dim embeddings) |
 | Repos on green CI (typecheck + test, GitHub Actions) | **42** |
 | Cost of one fully generated narrated video short (33s, 5 scenes) | **$0.0846** |
@@ -97,7 +97,7 @@ flowchart LR
 
 | Agent | What it does, autonomously |
 |---|---|
-| **voice** | Real-time conversation: streaming STT → LLM tool-loop (85 tools) → streamed TTS, over Discord voice *and* a browser WebSocket client, from one transport-agnostic engine. Interruptible mid-sentence *and* mid-thinking. |
+| **voice** | Real-time conversation: streaming STT → LLM tool-loop (92 tools) → streamed TTS, over Discord voice *and* a browser WebSocket client, from one transport-agnostic engine. Interruptible mid-sentence *and* mid-thinking. |
 | **brain** | Captures and classifies memories from every surface; serves hybrid semantic+keyword recall; maintains the knowledge graph. |
 | **coordinator** | Command routing (`!agent.command`), request/response correlation, per-agent timeouts, liveness, full audit trail. |
 | **security** | Weekly secret-leak scans (working tree *and* git history) + dependency audits across the whole GitHub org; opens CI-gated auto-fix PRs. Found real leaked keys. |
@@ -116,6 +116,34 @@ flowchart LR
 | **infra / context / do / discord / web-api** | VPS ops (read-only), time/weather ambience, sandboxed voice-triggered code changes (two-layer safety gate: no credentials + destructive-diff hold), Discord bridge, and the Bun+Hono API backing the dashboard. |
 
 Plus scheduled engines (not resident services): nightly cross-memory insight mining with a grounding gate ($2/night cap), an AI video pipeline (brief → storyboard → GPU image gen → voiceover → editable timeline → licence-enforced publish, $0.0846/short), and personal telemetry integrations.
+
+### Anatomy of a voice turn
+
+Everyone demos a voice agent; almost nobody publishes latency distributions from real use. Mine, from the turn loop's own instrumentation — 847 real conversational turns, 2026-07-14 → 2026-08-11 (re-verified 2026-08-12):
+
+| Stage | Measured |
+|---|---|
+| Deepgram utterance-end detection | ≈1s |
+| Endpointer hold — only when the turn looks unfinished | median 764ms, hard ceiling 2.5s |
+| Model turn — LLM + tool calls until the reply is complete | **p50 3.0s · p90 6.3s · p99 13.5s** |
+| Streaming TTS → first audible audio | median 230ms (1,014 utterances) |
+
+```mermaid
+flowchart TB
+    A[Jack stops talking] --> B[Deepgram streaming STT<br/>utterance end ≈1s]
+    B --> C{Semantic endpointer<br/>done, or mid-thought?}
+    C -- "mid-thought → hold<br/>median 764ms, ceiling 2.5s" --> D
+    C -- done --> D[Model turn: LLM + tool calls<br/>p50 3.0s · p90 6.3s]
+    D --> E[Streaming TTS<br/>first audio median 230ms]
+    E --> F[Jarvis speaking]
+    F -. "barge-in: talking over him<br/>halts audio mid-sentence" .-> A
+```
+
+The endpointer is the honest part. It's a semantic classifier deciding "is he done talking, or mid-thought?", and it was originally biased to hold when unsure. Ground-truth logging (each verdict scored against whether I actually kept talking) showed that bias was tuned for a problem that no longer existed: **97.8% of its holds were needless** — I had finished — while the error it guarded against, cutting me off, sat at **0.4%** of complete verdicts. Every needless hold is pure added latency: a mean **745ms politeness tax on every turn**.
+
+The fix (2026-07-22): flip the unsure-bias to "answer promptly" and cut the hold floors. Post-flip, the mean tax is **493ms** and cut-offs are unchanged at **0.3%** (4,205 logged endpoint decisions, 2026-06-09 → 2026-08-11). Still not done — 93% of the remaining holds are also needless, so the classifier keeps earning its skepticism.
+
+Interruption is real use, not demo-ware: **344 barge-ins** in the same 847-turn window. Talking over Jarvis halts his audio mid-sentence — and mid-"thinking" too, aborting the in-flight model turn.
 
 ---
 
