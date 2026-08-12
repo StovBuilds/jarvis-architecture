@@ -44,7 +44,7 @@ flowchart TB
     end
 
     subgraph Agents["22 always-on agents (systemd services)"]
-        V[voice - real-time conversation, 85 tools]
+        V[voice - real-time conversation, 92 tools]
         BR[brain - memory + knowledge graph]
         CO[coordinator - routing, liveness, registry]
         OPS[security · editor · scout · seo · inbox · news · research · calendar · brief · design · sync · docs · ...]
