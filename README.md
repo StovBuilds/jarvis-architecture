@@ -1,6 +1,6 @@
 # Jarvis — a personal multi-agent AI fleet
 
-**22 always-on AI agents. One small Linux VPS. Built and operated by one person, after hours.**
+**30+ AI agents, 23 of them always-on. One small Linux VPS. Built and operated by one person, after hours.**
 
 This repo is the public architecture reference for Jarvis: a personal AI platform where independent agents handle memory, voice conversation, security scanning, editorial QA, email triage, competitor intelligence, research, and more — coordinating with each other over a custom message bus, around the clock.
 
@@ -10,16 +10,17 @@ The system itself is private (it runs my life, so it stays single-user). This do
 
 ---
 
-## The honest numbers (verified 2026-07-27, live system state)
+## The honest numbers (re-verified 2026-10-02, live system state)
 
 | Metric | Value |
 |---|---|
-| Always-on agent services (systemd, `active running`) | **22** |
-| Inter-agent bus messages | **624k+ total, ~34.5k/day** |
-| Voice assistant tool integrations | **92** (grown from 51 since late June; re-verified 2026-08-12) |
+| Always-on agent services (systemd, `active running`) | **23** (22 on 2026-07-27) |
+| All agents: always-on services + product workers + scheduled agents | **36** (23 + 4 + 9) |
+| Agent-to-agent bus traffic | **~37.5k messages/day** (7-day average; ~34.5k/day on 2026-07-27, 624k+ in total by then) |
+| Voice assistant tool integrations | **96** (51 in late June, 92 on 2026-08-12) |
 | Voice latency, measured over 847 real conversational turns | **p50 3.0s · p90 6.3s** (window 2026-07-14 → 08-11; re-verified 2026-08-12 — see [Anatomy of a voice turn](#anatomy-of-a-voice-turn)) |
-| Knowledge graph | **3,183 nodes / 3,924 edges** (pgvector, 1024-dim embeddings) |
-| Repos on green CI (typecheck + test, GitHub Actions) | **42** |
+| Knowledge graph | **3,234 nodes / 3,939 edges** (pgvector, 1024-dim embeddings) |
+| Repos whose latest CI run on main is green (GitHub Actions) | **66** of 77 active repos (42 on 2026-07-27) |
 | Cost of one fully generated narrated video short (33s, 5 scenes) | **$0.0846** |
 | LLM spend governance | hard per-engine caps ($2/night insight mining, $15/day research, $20/mo video) |
 
@@ -43,8 +44,8 @@ flowchart TB
         B2[Postgres LISTEN/NOTIFY - automatic failover]
     end
 
-    subgraph Agents["22 always-on agents (systemd services)"]
-        V[voice - real-time conversation, 92 tools]
+    subgraph Agents["23 always-on agents (systemd services)"]
+        V[voice - real-time conversation, 96 tools]
         BR[brain - memory + knowledge graph]
         CO[coordinator - routing, liveness, registry]
         OPS[security · editor · scout · seo · inbox · news · research · calendar · brief · design · sync · docs · ...]
@@ -70,7 +71,7 @@ Key properties:
 
 ### How a frame travels
 
-What crosses the bus is agent-to-agent coordination traffic — machine to machine, one signed frame at a time. Roughly 34.5k of them a day.
+What crosses the bus is agent-to-agent coordination traffic — machine to machine, one signed frame at a time. Roughly 37.5k of them a day.
 
 ```mermaid
 flowchart LR
@@ -97,7 +98,7 @@ flowchart LR
 
 | Agent | What it does, autonomously |
 |---|---|
-| **voice** | Real-time conversation: streaming STT → LLM tool-loop (92 tools) → streamed TTS, over Discord voice *and* a browser WebSocket client, from one transport-agnostic engine. Interruptible mid-sentence *and* mid-thinking. |
+| **voice** | Real-time conversation: streaming STT → LLM tool-loop (96 tools) → streamed TTS, over Discord voice *and* a browser WebSocket client, from one transport-agnostic engine. Interruptible mid-sentence *and* mid-thinking. |
 | **brain** | Captures and classifies memories from every surface; serves hybrid semantic+keyword recall; maintains the knowledge graph. |
 | **coordinator** | Command routing (`!agent.command`), request/response correlation, per-agent timeouts, liveness, full audit trail. |
 | **security** | Weekly secret-leak scans (working tree *and* git history) + dependency audits across the whole GitHub org; opens CI-gated auto-fix PRs. Found real leaked keys. |
