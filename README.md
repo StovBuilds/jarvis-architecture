@@ -21,7 +21,6 @@ The system itself is private (it runs my life, so it stays single-user). This do
 | Voice latency, measured over 847 real conversational turns | **p50 3.0s · p90 6.3s** (window 2026-07-14 → 08-11; re-verified 2026-08-12 — see [Anatomy of a voice turn](#anatomy-of-a-voice-turn)) |
 | Knowledge graph | **3,234 nodes / 3,939 edges** (pgvector, 1024-dim embeddings) |
 | Repos whose latest CI run on main is green (GitHub Actions) | **66** of 77 active repos (42 on 2026-07-27) |
-| Cost of one fully generated narrated video short (33s, 5 scenes) | **$0.0846** |
 | LLM spend governance | hard per-engine caps ($2/night insight mining, $15/day research, $20/mo video) |
 
 Every number above comes from querying the live system — `systemctl`, `psql`, instrumented latency logs — not from documentation. That discipline is a design feature (see [What broke](#what-broke-selected-failures)).
