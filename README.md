@@ -115,7 +115,7 @@ flowchart LR
 | **docs** | Versioned mirror of 56 repos' documentation into Postgres, queryable by every other agent. |
 | **infra / context / do / discord / web-api** | VPS ops (read-only), time/weather ambience, sandboxed voice-triggered code changes (two-layer safety gate: no credentials + destructive-diff hold), Discord bridge, and the Bun+Hono API backing the dashboard. |
 
-Plus scheduled engines (not resident services): nightly cross-memory insight mining with a grounding gate ($2/night cap), an AI video pipeline (brief → storyboard → GPU image gen → voiceover → editable timeline → licence-enforced publish, $0.0846/short), and personal telemetry integrations.
+Plus scheduled engines (not resident services): nightly cross-memory insight mining with a grounding gate ($2/night cap), an AI video pipeline (brief → storyboard → GPU image gen → voiceover → editable timeline → licence-enforced publish), and personal telemetry integrations.
 
 ### Anatomy of a voice turn
 
