@@ -21,7 +21,7 @@ The system itself is private (it runs my life, so it stays single-user). This do
 | Voice latency, measured over 847 real conversational turns | **p50 3.0s · p90 6.3s** (window 2026-07-14 → 08-11; re-verified 2026-08-12 — see [Anatomy of a voice turn](#anatomy-of-a-voice-turn)) |
 | Knowledge graph | **3,234 nodes / 3,939 edges** (pgvector, 1024-dim embeddings) |
 | Repos whose latest CI run on main is green (GitHub Actions) | **66** of 77 active repos (42 on 2026-07-27) |
-| LLM spend governance | hard per-engine caps ($2/night insight mining, $15/day research, $20/mo video) |
+| LLM spend governance | hard per-engine caps ($2/night insight mining, $15/day research) |
 
 Every number above comes from querying the live system — `systemctl`, `psql`, instrumented latency logs — not from documentation. That discipline is a design feature (see [What broke](#what-broke-selected-failures)).
 
@@ -115,7 +115,7 @@ flowchart LR
 | **docs** | Versioned mirror of 56 repos' documentation into Postgres, queryable by every other agent. |
 | **infra / context / do / discord / web-api** | VPS ops (read-only), time/weather ambience, sandboxed voice-triggered code changes (two-layer safety gate: no credentials + destructive-diff hold), Discord bridge, and the Bun+Hono API backing the dashboard. |
 
-Plus scheduled engines (not resident services): nightly cross-memory insight mining with a grounding gate ($2/night cap), an AI video pipeline (brief → storyboard → GPU image gen → voiceover → editable timeline → licence-enforced publish), and personal telemetry integrations.
+Plus scheduled engines (not resident services): nightly cross-memory insight mining with a grounding gate ($2/night cap) and personal telemetry integrations.
 
 ### Anatomy of a voice turn
 
@@ -209,7 +209,7 @@ TypeScript (Bun + Node.js) · Postgres 16 + pgvector · Claude (Haiku/Sonnet/Opu
 
 **Why one VPS?** Constraint breeds architecture. A 4-vCPU box forces cheap-model tiering, hard cost caps, and CPU/GPU workload splitting — the same disciplines that matter at real scale, learnable at personal scale.
 
-**What does it cost to run?** Single-digit-dollars most days across all LLM spend, enforced by per-engine caps. The video pipeline renders on CPU (~$1/month); GPU is rented per-job, serverless.
+**What does it cost to run?** Single-digit-dollars most days across all LLM spend, enforced by per-engine caps.
 
 **Is any of it open source?** The 3D knowledge-graph renderer: [cortex-map](https://github.com/StovBuilds/cortex-map) (MIT). More may follow where a component generalises cleanly.
 
